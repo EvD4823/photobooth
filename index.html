@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="css/style.css">
+<title>Foto's Uploaden - Bruiloft</title>
+</head>
+
+<body>
+
+<div class="container">
+    <div class="card">
+
+        <h1>📸 Deel jullie mooiste momenten</h1>
+
+        <p class="subtitle">
+            Upload hier de foto's van onze bijzondere dag.
+        </p>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">💍</div>
+            <p>Klik hier of sleep foto's naar dit vak</p>
+        </div>
+
+        <input type="file" id="fileInput" multiple accept="image/*">
+
+        <div class="preview-container" id="previewContainer"></div>
+
+        <button class="upload-btn" id="uploadBtn">
+            Foto's uploaden
+        </button>
+
+        <div class="status" id="status"></div>
+
+    </div>
+</div>
+<script src="js/app.js"></script>
+</body>
+</html>
