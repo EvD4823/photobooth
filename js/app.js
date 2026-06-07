@@ -9,6 +9,8 @@ const lightboxImage = document.getElementById("lightboxImage");
 const lightboxClose = document.getElementById("lightboxClose");
 const lightboxPrev = document.getElementById("lightboxPrev");
 const lightboxNext = document.getElementById("lightboxNext");
+const nameInput = document.getElementById("nameInput");
+const lightboxUploader = document.getElementById("lightboxUploader");
 
 let galleryImages = [];
 let currentImageIndex = 0;
@@ -101,6 +103,20 @@ uploadBtn.addEventListener("click", async () => {
             status.textContent = "Upload fout: " + error.message;
             return;
         }
+        const uploaderName = nameInput.value.trim();
+
+const { error: databaseError } = await supabaseClient
+    .from("wedding_photos")
+    .insert({
+        file_path: fullPath,
+        uploader_name: uploaderName || null
+    });
+
+if (databaseError) {
+    console.error(databaseError);
+    status.textContent = "Foto geüpload, maar naam opslaan ging mis.";
+    return;
+}
     }
 
     status.textContent = "Klaar!";
@@ -114,8 +130,17 @@ uploadBtn.addEventListener("click", async () => {
 /* ---------------- LOAD GALLERY ---------------- */
 
 function openLightbox(index) {
+    if (!galleryImages.length) return;
+    if (!galleryImages[index]) return;
+
     currentImageIndex = index;
-    lightboxImage.src = galleryImages[currentImageIndex];
+
+    lightboxImage.style.transform = "";
+    lightboxImage.style.transition = "";
+    lightboxImage.src = galleryImages[currentImageIndex].url;
+
+    showUploaderName();
+
     lightbox.classList.add("active");
 }
 
@@ -128,6 +153,7 @@ let isSliding = false;
 
 function slideToImage(newIndex, direction) {
     if (!galleryImages.length || isSliding) return;
+    if (!galleryImages[newIndex]) return;
 
     isSliding = true;
 
@@ -146,7 +172,9 @@ function slideToImage(newIndex, direction) {
 
     setTimeout(() => {
         currentImageIndex = newIndex;
-        lightboxImage.src = galleryImages[currentImageIndex];
+        lightboxImage.src = galleryImages[currentImageIndex].url;
+
+        showUploaderName();
 
         lightboxImage.style.transform = "";
         lightboxImage.style.transition = "";
@@ -167,11 +195,15 @@ function slideToImage(newIndex, direction) {
 }
 
 function showNextImage() {
+    if (!galleryImages.length) return;
+
     const nextIndex = (currentImageIndex + 1) % galleryImages.length;
     slideToImage(nextIndex, "next");
 }
 
 function showPreviousImage() {
+    if (!galleryImages.length) return;
+
     const previousIndex =
         (currentImageIndex - 1 + galleryImages.length) % galleryImages.length;
 
@@ -179,66 +211,45 @@ function showPreviousImage() {
 }
 
 async function loadImages() {
-    status.textContent = "Galerij laden...";
-
     const { data, error } = await supabaseClient
-        .storage
-        .from("wedding-photos")
-        .list("uploads", {
-            limit: 100,
-            sortBy: {
-                column: "created_at",
-                order: "desc"
-            }
-        });
+        .from("wedding_photos")
+        .select("*")
+        .order("created_at", { ascending: false });
 
     if (error) {
         console.error("Galerij laden mislukt:", error);
-        status.textContent = `Galerij laden mislukt: ${error.message}`;
         return;
     }
-
-    console.log("Bestanden in Supabase:", data);
 
     gallery.innerHTML = "";
     galleryImages = [];
 
-    if (!data || data.length === 0) {
-        status.textContent = "Nog geen foto's gevonden in de galerij.";
-        return;
-    }
-
-    data.forEach(file => {
+    data.forEach(photo => {
         const { data: urlData } = supabaseClient
             .storage
             .from("wedding-photos")
-            .getPublicUrl(`uploads/${file.name}`);
+            .getPublicUrl(photo.file_path);
 
-const imageTypes = ["jpg", "jpeg", "png", "gif", "webp"];
-const extension = file.name.split(".").pop().toLowerCase();
+        galleryImages.push({
+            url: urlData.publicUrl,
+            uploaderName: photo.uploader_name
+        });
 
-if (!imageTypes.includes(extension)) {
-    return;
-}
+        const imageIndex = galleryImages.length - 1;
 
-galleryImages.push(urlData.publicUrl);
-const imageIndex = galleryImages.length - 1;
+        const img = document.createElement("img");
+        img.src = urlData.publicUrl;
 
-const img = document.createElement("img");
-img.src = urlData.publicUrl;
+        img.onerror = () => {
+            img.remove();
+        };
 
-img.onerror = () => {
-    img.remove();
-};
+        img.addEventListener("click", () => {
+            openLightbox(imageIndex);
+        });
 
-img.addEventListener("click", () => {
-    openLightbox(imageIndex);
-});
-
-gallery.appendChild(img);
+        gallery.appendChild(img);
     });
-
-    status.textContent = "";
 }
 
 lightboxClose.addEventListener("click", closeLightbox);
@@ -253,6 +264,7 @@ lightboxNext.addEventListener("click", showNextImage);
 lightboxPrev.addEventListener("click", showPreviousImage);
 
 lightboxImage.addEventListener("touchstart", (e) => {
+    if (!lightbox.classList.contains("active")) return;
     if (!galleryImages.length) return;
 
     isTouching = true;
@@ -264,6 +276,7 @@ lightboxImage.addEventListener("touchstart", (e) => {
 
 lightboxImage.addEventListener("touchmove", (e) => {
     if (!isTouching) return;
+    if (!galleryImages.length) return;
 
     touchCurrentX = e.touches[0].clientX;
     const distance = touchCurrentX - touchStartX;
@@ -276,21 +289,35 @@ lightboxImage.addEventListener("touchend", () => {
 
     isTouching = false;
 
+    if (!galleryImages.length) {
+        lightboxImage.style.transform = "";
+        lightboxImage.style.transition = "";
+        return;
+    }
+
     const swipeDistance = touchCurrentX - touchStartX;
 
     lightboxImage.style.transition = "";
     lightboxImage.style.transform = "";
 
-if (swipeDistance > 60) {
-    showNextImage();
-    return;
-}
+    if (swipeDistance > 60) {
+        showNextImage();
+        return;
+    }
 
-if (swipeDistance < -60) {
-    showPreviousImage();
-    return;
-}
+    if (swipeDistance < -60) {
+        showPreviousImage();
+        return;
+    }
 });
+
+function showUploaderName() {
+    const uploaderName = galleryImages[currentImageIndex].uploaderName;
+
+    lightboxUploader.textContent = uploaderName
+        ? `Geüpload door ${uploaderName}`
+        : "";
+}
 
 window.addEventListener("load", loadImages);
 setInterval(loadImages, 10000);

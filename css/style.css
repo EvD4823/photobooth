@@ -65,6 +65,21 @@ h1 {
     margin-bottom: 10px;
 }
 
+.name-input {
+    width: 100%;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    border: 1px solid #e0d6cc;
+    border-radius: 10px;
+    font-size: 16px;
+    color: var(--dark);
+}
+
+.name-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
 input[type=file] {
     display: none;
 }
@@ -209,6 +224,16 @@ input[type=file] {
 #lightboxImage.slide-in-right {
     transform: translateX(80px) scale(0.96);
     opacity: 0;
+}
+
+.lightbox-uploader {
+    position: absolute;
+    bottom: 24px;
+    color: white;
+    font-size: 15px;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 8px 14px;
+    border-radius: 999px;
 }
 
 @media (max-width: 600px) {
