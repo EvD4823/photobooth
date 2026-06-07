@@ -7,6 +7,14 @@ const gallery = document.getElementById("gallery");
 const lightbox = document.getElementById("lightbox");
 const lightboxImage = document.getElementById("lightboxImage");
 const lightboxClose = document.getElementById("lightboxClose");
+const lightboxPrev = document.getElementById("lightboxPrev");
+const lightboxNext = document.getElementById("lightboxNext");
+
+let galleryImages = [];
+let currentImageIndex = 0;
+let touchStartX = 0;
+let touchCurrentX = 0;
+let isTouching = false;
 
 // Supabase setup
 const supabaseUrl = "https://spauexdntavolspackhm.supabase.co";
@@ -105,6 +113,71 @@ uploadBtn.addEventListener("click", async () => {
 
 /* ---------------- LOAD GALLERY ---------------- */
 
+function openLightbox(index) {
+    currentImageIndex = index;
+    lightboxImage.src = galleryImages[currentImageIndex];
+    lightbox.classList.add("active");
+}
+
+function closeLightbox() {
+    lightbox.classList.remove("active");
+    lightboxImage.src = "";
+}
+
+let isSliding = false;
+
+function slideToImage(newIndex, direction) {
+    if (!galleryImages.length || isSliding) return;
+
+    isSliding = true;
+
+    const slideOutClass = direction === "next"
+        ? "slide-out-left"
+        : "slide-out-right";
+
+    const slideInClass = direction === "next"
+        ? "slide-in-right"
+        : "slide-in-left";
+
+    lightboxImage.style.transform = "";
+    lightboxImage.style.transition = "";
+
+    lightboxImage.classList.add(slideOutClass);
+
+    setTimeout(() => {
+        currentImageIndex = newIndex;
+        lightboxImage.src = galleryImages[currentImageIndex];
+
+        lightboxImage.style.transform = "";
+        lightboxImage.style.transition = "";
+
+        lightboxImage.classList.remove(slideOutClass);
+        lightboxImage.classList.add(slideInClass);
+
+        requestAnimationFrame(() => {
+            lightboxImage.classList.remove(slideInClass);
+        });
+
+        setTimeout(() => {
+            lightboxImage.style.transform = "";
+            lightboxImage.style.transition = "";
+            isSliding = false;
+        }, 230);
+    }, 180);
+}
+
+function showNextImage() {
+    const nextIndex = (currentImageIndex + 1) % galleryImages.length;
+    slideToImage(nextIndex, "next");
+}
+
+function showPreviousImage() {
+    const previousIndex =
+        (currentImageIndex - 1 + galleryImages.length) % galleryImages.length;
+
+    slideToImage(previousIndex, "previous");
+}
+
 async function loadImages() {
     status.textContent = "Galerij laden...";
 
@@ -128,6 +201,7 @@ async function loadImages() {
     console.log("Bestanden in Supabase:", data);
 
     gallery.innerHTML = "";
+    galleryImages = [];
 
     if (!data || data.length === 0) {
         status.textContent = "Nog geen foto's gevonden in de galerij.";
@@ -147,6 +221,9 @@ if (!imageTypes.includes(extension)) {
     return;
 }
 
+galleryImages.push(urlData.publicUrl);
+const imageIndex = galleryImages.length - 1;
+
 const img = document.createElement("img");
 img.src = urlData.publicUrl;
 
@@ -155,15 +232,8 @@ img.onerror = () => {
 };
 
 img.addEventListener("click", () => {
-    lightboxImage.src = img.src;
-    lightbox.classList.add("active");
+    openLightbox(imageIndex);
 });
-
-img.style.width = "200px";
-img.style.height = "200px";
-img.style.objectFit = "cover";
-img.style.margin = "5px";
-img.style.borderRadius = "10px";
 
 gallery.appendChild(img);
     });
@@ -171,16 +241,55 @@ gallery.appendChild(img);
     status.textContent = "";
 }
 
-lightboxClose.addEventListener("click", () => {
-    lightbox.classList.remove("active");
-    lightboxImage.src = "";
-});
+lightboxClose.addEventListener("click", closeLightbox);
 
 lightbox.addEventListener("click", (e) => {
     if (e.target === lightbox) {
-        lightbox.classList.remove("active");
-        lightboxImage.src = "";
+        closeLightbox();
     }
+});
+
+lightboxNext.addEventListener("click", showNextImage);
+lightboxPrev.addEventListener("click", showPreviousImage);
+
+lightboxImage.addEventListener("touchstart", (e) => {
+    if (!galleryImages.length) return;
+
+    isTouching = true;
+    touchStartX = e.touches[0].clientX;
+    touchCurrentX = touchStartX;
+
+    lightboxImage.style.transition = "none";
+});
+
+lightboxImage.addEventListener("touchmove", (e) => {
+    if (!isTouching) return;
+
+    touchCurrentX = e.touches[0].clientX;
+    const distance = touchCurrentX - touchStartX;
+
+    lightboxImage.style.transform = `translateX(${distance}px) scale(0.98)`;
+});
+
+lightboxImage.addEventListener("touchend", () => {
+    if (!isTouching) return;
+
+    isTouching = false;
+
+    const swipeDistance = touchCurrentX - touchStartX;
+
+    lightboxImage.style.transition = "";
+    lightboxImage.style.transform = "";
+
+if (swipeDistance > 60) {
+    showNextImage();
+    return;
+}
+
+if (swipeDistance < -60) {
+    showPreviousImage();
+    return;
+}
 });
 
 window.addEventListener("load", loadImages);

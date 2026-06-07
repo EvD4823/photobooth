@@ -111,18 +111,25 @@ input[type=file] {
 }
 
 .lightbox {
-    display: none;
     position: fixed;
     z-index: 999;
     inset: 0;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0);
     align-items: center;
     justify-content: center;
     padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    display: flex;
+    transition: opacity 0.2s ease, background 0.2s ease, visibility 0.2s ease;
 }
 
 .lightbox.active {
-    display: flex;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    background: rgba(0, 0, 0, 0.85);
 }
 
 .lightbox img {
@@ -130,6 +137,14 @@ input[type=file] {
     max-height: 90vh;
     border-radius: 10px;
     object-fit: contain;
+    transform: scale(0.92);
+    opacity: 0;
+    transition: transform 0.22s ease, opacity 0.22s ease;
+}
+
+.lightbox.active img {
+    transform: scale(1);
+    opacity: 1;
 }
 
 .lightbox-close {
@@ -143,6 +158,95 @@ input[type=file] {
     cursor: pointer;
 }
 
+.lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    z-index: 1000;
+}
+
+.lightbox-prev {
+    left: 18px;
+}
+
+.lightbox-next {
+    right: 18px;
+}
+
+.lightbox-nav:hover {
+    background: rgba(255, 255, 255, 0.32);
+}
+
+#lightboxImage {
+    transition: transform 0.22s ease, opacity 0.22s ease;
+    will-change: transform, opacity;
+    touch-action: pan-y;
+}
+
+#lightboxImage.slide-out-left {
+    transform: translateX(-80px) scale(0.96);
+    opacity: 0;
+}
+
+#lightboxImage.slide-out-right {
+    transform: translateX(80px) scale(0.96);
+    opacity: 0;
+}
+
+#lightboxImage.slide-in-left {
+    transform: translateX(-80px) scale(0.96);
+    opacity: 0;
+}
+
+#lightboxImage.slide-in-right {
+    transform: translateX(80px) scale(0.96);
+    opacity: 0;
+}
+
+@media (max-width: 600px) {
+    .lightbox-nav {
+        display: none;
+    }
+}
+
 #gallery img {
     cursor: pointer;
+}
+
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 15px;
+}
+
+.gallery img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    height: auto;
+    object-fit: cover;
+    border-radius: 6px;
+    cursor: pointer;
+    display: block;
+}
+
+@media (min-width: 700px) {
+    .gallery {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+    }
+}
+
+@media (min-width: 1000px) {
+    .gallery {
+        grid-template-columns: repeat(5, 1fr);
+    }
 }

@@ -42,14 +42,16 @@
         <p>
             Hier worden alle foto's getoond die tijdens de bruiloft zijn geüpload. Blijf deze pagina verversen om de nieuwste foto's te zien!
         </p>
-        <div id="gallery" style="display:flex;flex-wrap:wrap;">
-        </div>
+        <div id="gallery" class="gallery"></div>
     </div>
 </div>
 
 <div class="lightbox" id="lightbox">
     <button class="lightbox-close" id="lightboxClose">&times;</button>
+
+    <button class="lightbox-nav lightbox-prev" id="lightboxPrev">&#10094;</button>
     <img id="lightboxImage" src="" alt="">
+    <button class="lightbox-nav lightbox-next" id="lightboxNext">&#10095;</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
