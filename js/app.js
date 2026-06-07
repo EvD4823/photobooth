@@ -230,25 +230,27 @@ async function loadImages() {
             .from("wedding-photos")
             .getPublicUrl(photo.file_path);
 
-        galleryImages.push({
-            url: urlData.publicUrl,
-            uploaderName: photo.uploader_name
-        });
-
-        const imageIndex = galleryImages.length - 1;
-
         const img = document.createElement("img");
         img.src = urlData.publicUrl;
+
+        img.onload = () => {
+            galleryImages.push({
+                url: urlData.publicUrl,
+                uploaderName: photo.uploader_name
+            });
+
+            const imageIndex = galleryImages.length - 1;
+
+            img.addEventListener("click", () => {
+                openLightbox(imageIndex);
+            });
+
+            gallery.appendChild(img);
+        };
 
         img.onerror = () => {
             img.remove();
         };
-
-        img.addEventListener("click", () => {
-            openLightbox(imageIndex);
-        });
-
-        gallery.appendChild(img);
     });
 }
 
@@ -318,6 +320,15 @@ function showUploaderName() {
         ? `Geüpload door ${uploaderName}`
         : "";
 }
+
+img.onerror = async () => {
+    img.remove();
+
+    await supabaseClient
+        .from("wedding_photos")
+        .delete()
+        .eq("file_path", photo.file_path);
+};
 
 window.addEventListener("load", loadImages);
 setInterval(loadImages, 10000);
