@@ -4,6 +4,9 @@ const previewContainer = document.getElementById("previewContainer");
 const uploadBtn = document.getElementById("uploadBtn");
 const status = document.getElementById("status");
 const gallery = document.getElementById("gallery");
+const lightbox = document.getElementById("lightbox");
+const lightboxImage = document.getElementById("lightboxImage");
+const lightboxClose = document.getElementById("lightboxClose");
 
 // Supabase setup
 const supabaseUrl = "https://spauexdntavolspackhm.supabase.co";
@@ -151,6 +154,11 @@ img.onerror = () => {
     img.remove();
 };
 
+img.addEventListener("click", () => {
+    lightboxImage.src = img.src;
+    lightbox.classList.add("active");
+});
+
 img.style.width = "200px";
 img.style.height = "200px";
 img.style.objectFit = "cover";
@@ -162,6 +170,18 @@ gallery.appendChild(img);
 
     status.textContent = "";
 }
+
+lightboxClose.addEventListener("click", () => {
+    lightbox.classList.remove("active");
+    lightboxImage.src = "";
+});
+
+lightbox.addEventListener("click", (e) => {
+    if (e.target === lightbox) {
+        lightbox.classList.remove("active");
+        lightboxImage.src = "";
+    }
+});
 
 window.addEventListener("load", loadImages);
 setInterval(loadImages, 10000);
