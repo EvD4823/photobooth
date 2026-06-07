@@ -137,17 +137,27 @@ async function loadImages() {
             .from("wedding-photos")
             .getPublicUrl(`uploads/${file.name}`);
 
-        const img = document.createElement("img");
-        img.src = urlData.publicUrl;
-        img.alt = "Bruiloft foto";
+const imageTypes = ["jpg", "jpeg", "png", "gif", "webp"];
+const extension = file.name.split(".").pop().toLowerCase();
 
-        img.style.width = "200px";
-        img.style.height = "200px";
-        img.style.objectFit = "cover";
-        img.style.margin = "5px";
-        img.style.borderRadius = "10px";
+if (!imageTypes.includes(extension)) {
+    return;
+}
 
-        gallery.appendChild(img);
+const img = document.createElement("img");
+img.src = urlData.publicUrl;
+
+img.onerror = () => {
+    img.remove();
+};
+
+img.style.width = "200px";
+img.style.height = "200px";
+img.style.objectFit = "cover";
+img.style.margin = "5px";
+img.style.borderRadius = "10px";
+
+gallery.appendChild(img);
     });
 
     status.textContent = "";
