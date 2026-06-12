@@ -9,14 +9,9 @@ const lightboxImage = document.getElementById("lightboxImage");
 const lightboxClose = document.getElementById("lightboxClose");
 const lightboxPrev = document.getElementById("lightboxPrev");
 const lightboxNext = document.getElementById("lightboxNext");
+const lightboxDelete = document.getElementById("lightboxDelete");
 const nameInput = document.getElementById("nameInput");
 const lightboxUploader = document.getElementById("lightboxUploader");
-
-let galleryImages = [];
-let currentImageIndex = 0;
-let touchStartX = 0;
-let touchCurrentX = 0;
-let isTouching = false;
 
 // Supabase setup
 const supabaseUrl = "https://spauexdntavolspackhm.supabase.co";
@@ -24,6 +19,40 @@ const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 let selectedFiles = [];
+let galleryImages = [];
+let currentImageIndex = 0;
+let currentUser = null;
+let touchStartX = 0;
+let touchCurrentX = 0;
+let isTouching = false;
+let isSliding = false;
+
+/* ---------------- AUTH ---------------- */
+
+async function ensureUser() {
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+
+    if (sessionData.session) {
+        currentUser = sessionData.session.user;
+        return currentUser;
+    }
+
+    const { data, error } = await supabaseClient.auth.signInAnonymously();
+
+    if (error) {
+        console.error("Anoniem inloggen mislukt:", error);
+        status.textContent = "Kan gebruiker niet voorbereiden voor upload.";
+        return null;
+    }
+
+    currentUser = data.user;
+    return currentUser;
+}
+
+async function getCurrentUser() {
+    const { data } = await supabaseClient.auth.getSession();
+    currentUser = data.session?.user || null;
+}
 
 /* ---------------- FILE SELECT ---------------- */
 
@@ -78,45 +107,50 @@ uploadArea.addEventListener("drop", (e) => {
 /* ---------------- UPLOAD ---------------- */
 
 uploadBtn.addEventListener("click", async () => {
-
     if (!selectedFiles.length) {
         status.textContent = "Kies eerst een of meer foto's.";
+        return;
+    }
+
+    const user = await ensureUser();
+
+    if (!user) {
         return;
     }
 
     status.textContent = "Uploaden...";
 
     for (const file of selectedFiles) {
-
         const safeFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
         const fullPath = `uploads/${Date.now()}-${safeFileName}`;
+        const uploaderName = nameInput.value.trim();
 
-        const { error } = await supabaseClient
+        const { error: uploadError } = await supabaseClient
             .storage
             .from("wedding-photos")
             .upload(fullPath, file, {
                 contentType: file.type
             });
 
-        if (error) {
-            console.error(error);
-            status.textContent = "Upload fout: " + error.message;
+        if (uploadError) {
+            console.error(uploadError);
+            status.textContent = "Upload fout: " + uploadError.message;
             return;
         }
-        const uploaderName = nameInput.value.trim();
 
-const { error: databaseError } = await supabaseClient
-    .from("wedding_photos")
-    .insert({
-        file_path: fullPath,
-        uploader_name: uploaderName || null
-    });
+        const { error: databaseError } = await supabaseClient
+            .from("wedding_photos")
+            .insert({
+                file_path: fullPath,
+                uploader_name: uploaderName || null,
+                user_id: user.id
+            });
 
-if (databaseError) {
-    console.error(databaseError);
-    status.textContent = "Foto geüpload, maar naam opslaan ging mis.";
-    return;
-}
+        if (databaseError) {
+            console.error(databaseError);
+            status.textContent = "Foto geüpload, maar naam opslaan ging mis.";
+            return;
+        }
     }
 
     status.textContent = "Klaar!";
@@ -127,7 +161,7 @@ if (databaseError) {
     await loadImages();
 });
 
-/* ---------------- LOAD GALLERY ---------------- */
+/* ---------------- LIGHTBOX ---------------- */
 
 function openLightbox(index) {
     if (!galleryImages.length) return;
@@ -140,6 +174,7 @@ function openLightbox(index) {
     lightboxImage.src = galleryImages[currentImageIndex].url;
 
     showUploaderName();
+    updateDeleteButton();
 
     lightbox.classList.add("active");
 }
@@ -147,9 +182,29 @@ function openLightbox(index) {
 function closeLightbox() {
     lightbox.classList.remove("active");
     lightboxImage.src = "";
+    lightboxUploader.textContent = "";
+    lightboxDelete.classList.remove("visible");
 }
 
-let isSliding = false;
+function showUploaderName() {
+    const uploaderName = galleryImages[currentImageIndex]?.uploaderName;
+
+    lightboxUploader.textContent = uploaderName
+        ? `Geüpload door ${uploaderName}`
+        : "";
+}
+
+function updateDeleteButton() {
+    const photo = galleryImages[currentImageIndex];
+
+    if (currentUser && photo?.userId === currentUser.id) {
+        lightboxDelete.classList.add("visible");
+    } else {
+        lightboxDelete.classList.remove("visible");
+    }
+}
+
+/* ---------------- CAROUSEL ---------------- */
 
 function slideToImage(newIndex, direction) {
     if (!galleryImages.length || isSliding) return;
@@ -167,7 +222,6 @@ function slideToImage(newIndex, direction) {
 
     lightboxImage.style.transform = "";
     lightboxImage.style.transition = "";
-
     lightboxImage.classList.add(slideOutClass);
 
     setTimeout(() => {
@@ -175,6 +229,7 @@ function slideToImage(newIndex, direction) {
         lightboxImage.src = galleryImages[currentImageIndex].url;
 
         showUploaderName();
+        updateDeleteButton();
 
         lightboxImage.style.transform = "";
         lightboxImage.style.transition = "";
@@ -210,6 +265,8 @@ function showPreviousImage() {
     slideToImage(previousIndex, "previous");
 }
 
+/* ---------------- LOAD GALLERY ---------------- */
+
 async function loadImages() {
     const { data, error } = await supabaseClient
         .from("wedding_photos")
@@ -234,12 +291,15 @@ async function loadImages() {
         img.src = urlData.publicUrl;
 
         img.onload = () => {
-            galleryImages.push({
-                url: urlData.publicUrl,
-                uploaderName: photo.uploader_name
-            });
+            const imageIndex = galleryImages.length;
 
-            const imageIndex = galleryImages.length - 1;
+            galleryImages.push({
+                id: photo.id,
+                url: urlData.publicUrl,
+                filePath: photo.file_path,
+                uploaderName: photo.uploader_name,
+                userId: photo.user_id
+            });
 
             img.addEventListener("click", () => {
                 openLightbox(imageIndex);
@@ -254,6 +314,48 @@ async function loadImages() {
     });
 }
 
+/* ---------------- DELETE ---------------- */
+
+lightboxDelete.addEventListener("click", async () => {
+    const photo = galleryImages[currentImageIndex];
+
+    if (!photo) return;
+    if (!currentUser || photo.userId !== currentUser.id) return;
+
+    const confirmDelete = confirm("Weet je zeker dat je deze foto wilt verwijderen?");
+
+    if (!confirmDelete) return;
+
+    const { error: storageError } = await supabaseClient
+        .storage
+        .from("wedding-photos")
+        .remove([photo.filePath]);
+
+    if (storageError) {
+        console.error(storageError);
+        status.textContent = "Foto verwijderen uit opslag mislukt.";
+        return;
+    }
+
+    const { error: databaseError } = await supabaseClient
+        .from("wedding_photos")
+        .delete()
+        .eq("id", photo.id);
+
+    if (databaseError) {
+        console.error(databaseError);
+        status.textContent = "Foto verwijderen uit database mislukt.";
+        return;
+    }
+
+    closeLightbox();
+    await loadImages();
+
+    status.textContent = "Foto verwijderd.";
+});
+
+/* ---------------- LIGHTBOX EVENTS ---------------- */
+
 lightboxClose.addEventListener("click", closeLightbox);
 
 lightbox.addEventListener("click", (e) => {
@@ -264,6 +366,8 @@ lightbox.addEventListener("click", (e) => {
 
 lightboxNext.addEventListener("click", showNextImage);
 lightboxPrev.addEventListener("click", showPreviousImage);
+
+/* ---------------- SWIPE EVENTS ---------------- */
 
 lightboxImage.addEventListener("touchstart", (e) => {
     if (!lightbox.classList.contains("active")) return;
@@ -313,22 +417,11 @@ lightboxImage.addEventListener("touchend", () => {
     }
 });
 
-function showUploaderName() {
-    const uploaderName = galleryImages[currentImageIndex].uploaderName;
+/* ---------------- INIT ---------------- */
 
-    lightboxUploader.textContent = uploaderName
-        ? `Geüpload door ${uploaderName}`
-        : "";
-}
+window.addEventListener("load", async () => {
+    await getCurrentUser();
+    await loadImages();
+});
 
-img.onerror = async () => {
-    img.remove();
-
-    await supabaseClient
-        .from("wedding_photos")
-        .delete()
-        .eq("file_path", photo.file_path);
-};
-
-window.addEventListener("load", loadImages);
 setInterval(loadImages, 10000);
