@@ -226,14 +226,98 @@ input[type=file] {
     opacity: 0;
 }
 
-.lightbox-uploader {
+.lightbox-info {
     position: absolute;
+    left: 50%;
     bottom: 24px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: calc(100% - 32px);
+    z-index: 1000;
+}
+
+.lightbox-uploader {
     color: white;
     font-size: 15px;
     background: rgba(0, 0, 0, 0.45);
     padding: 8px 14px;
     border-radius: 999px;
+    white-space: nowrap;
+    margin: 0;
+}
+
+.lightbox-info {
+    position: absolute;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    max-width: calc(100% - 32px);
+    z-index: 1000;
+}
+
+.lightbox-info.has-delete {
+    justify-content: center;
+}
+
+.lightbox-uploader {
+    color: white;
+    font-size: 15px;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 8px 14px;
+    border-radius: 999px;
+    white-space: nowrap;
+    margin: 0;
+}
+
+.lightbox-delete {
+    align-items: center;
+    gap: 6px;
+    color: #7f1d1d;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.lightbox-delete[hidden] {
+    display: none;
+}
+
+.lightbox-delete.visible {
+    display: inline-flex;
+}
+
+.lightbox-delete:hover {
+    background: #fecaca;
+}
+
+.delete-icon {
+    font-size: 15px;
+    line-height: 1;
+}
+
+@media (max-width: 520px) {
+    .lightbox-info {
+        bottom: 18px;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .lightbox-uploader,
+    .lightbox-delete {
+        font-size: 14px;
+        padding: 8px 12px;
+    }
 }
 
 @media (max-width: 600px) {

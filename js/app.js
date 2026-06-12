@@ -184,6 +184,10 @@ function closeLightbox() {
     lightboxImage.src = "";
     lightboxUploader.textContent = "";
     lightboxDelete.classList.remove("visible");
+    lightboxDelete.hidden = true;
+
+    const lightboxInfo = document.querySelector(".lightbox-info");
+    lightboxInfo.classList.remove("has-delete");
 }
 
 function showUploaderName() {
@@ -196,12 +200,13 @@ function showUploaderName() {
 
 function updateDeleteButton() {
     const photo = galleryImages[currentImageIndex];
+    const canDelete = currentUser && photo?.userId === currentUser.id;
 
-    if (currentUser && photo?.userId === currentUser.id) {
-        lightboxDelete.classList.add("visible");
-    } else {
-        lightboxDelete.classList.remove("visible");
-    }
+    lightboxDelete.classList.toggle("visible", canDelete);
+    lightboxDelete.hidden = !canDelete;
+
+    const lightboxInfo = document.querySelector(".lightbox-info");
+    lightboxInfo.classList.toggle("has-delete", canDelete);
 }
 
 /* ---------------- CAROUSEL ---------------- */

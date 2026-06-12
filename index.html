@@ -56,13 +56,16 @@
 <div class="lightbox" id="lightbox">
     <button class="lightbox-close" id="lightboxClose">&times;</button>
 
-<button class="lightbox-delete" id="lightboxDelete">
-    Verwijder foto
-</button>
-
     <button class="lightbox-nav lightbox-prev" id="lightboxPrev">&#10094;</button>
     <img id="lightboxImage" src="" alt="">
+    <div class="lightbox-info">
     <p class="lightbox-uploader" id="lightboxUploader"></p>
+
+    <button class="lightbox-delete" id="lightboxDelete" title="Foto verwijderen" hidden>
+    <span class="delete-icon">🗑</span>
+    <span>Verwijderen</span>
+</button>
+</div>
     <button class="lightbox-nav lightbox-next" id="lightboxNext">&#10095;</button>
 </div>
 
