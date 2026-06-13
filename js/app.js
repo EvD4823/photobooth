@@ -66,9 +66,13 @@ fileInput.addEventListener("change", (e) => {
 
 function handleFiles(files) {
     selectedFiles = Array.from(files);
+    renderPreviews();
+}
+
+function renderPreviews() {
     previewContainer.innerHTML = "";
 
-    selectedFiles.forEach(file => {
+    selectedFiles.forEach((file, index) => {
         const reader = new FileReader();
 
         reader.onload = (e) => {
@@ -78,12 +82,32 @@ function handleFiles(files) {
             const img = document.createElement("img");
             img.src = e.target.result;
 
+            const removeBtn = document.createElement("button");
+            removeBtn.className = "preview-remove";
+            removeBtn.type = "button";
+            removeBtn.innerHTML = "&times;";
+            removeBtn.title = "Foto verwijderen";
+
+            removeBtn.addEventListener("click", () => {
+                removeSelectedFile(index);
+            });
+
             div.appendChild(img);
+            div.appendChild(removeBtn);
             previewContainer.appendChild(div);
         };
 
         reader.readAsDataURL(file);
     });
+}
+
+function removeSelectedFile(index) {
+    selectedFiles.splice(index, 1);
+    renderPreviews();
+
+    if (!selectedFiles.length) {
+        fileInput.value = "";
+    }
 }
 
 /* ---------------- DRAG & DROP ---------------- */

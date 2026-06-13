@@ -359,3 +359,27 @@ input[type=file] {
         grid-template-columns: repeat(5, 1fr);
     }
 }
+
+.preview {
+    position: relative;
+}
+
+.preview-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    color: #7f1d1d;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.preview-remove:hover {
+    background: #fee2e2;
+}
